@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build Backend') {
+            when {
+                branch 'backend'
+            }
+            steps {
+                sh 'cd backend && npm install && npm run build'
+            }
+        }
+        stage('Build Frontend') {
+            when {
+                branch 'frontend'
+            }
+            steps {
+                sh 'cd frontend && npm install && npm run build'
+            }
+        }
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@<EC2_IP> <<EOF
+                    cd /var/www/backend
+                    git pull origin backend
+                    docker-compose up -d --build
+                    EOF
+                    '''
+                }
+            }
+        }
+    }
+}
