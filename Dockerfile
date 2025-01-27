@@ -1,29 +1,24 @@
-FROM node:21.7.3-alpine as server
+FROM node:21.7.3-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package*.json .
 
-RUN npm init -y
+RUN npm install -g npm@10.8.1
+
+RUN npm install -g create-react-app
+
+RUN create-react-app soccershototsu
+
+WORKDIR /app/soccershototsu
 
 RUN npm install
 
+RUN npm run build
+
 COPY . .
 
-RUN apk add --no-cache mongodb-tools
+EXPOSE 3000
 
-RUN echo "const express = require('express'); \
-          const cors = require('cors'); \
-          const path = require('path'); \
-          const app = express(); \
-          const PORT = process.env.PORT || 3001; \
-          app.use(express.json()); \
-	  app.use(cors()); \
-          app.listen(PORT, () => { \
-            console.log(\`Server is running on port \${PORT}\`); \
-          });" > server.js
-
-EXPOSE 3001
-
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
 
