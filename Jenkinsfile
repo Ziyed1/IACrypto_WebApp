@@ -4,12 +4,15 @@ pipeline {
     environment {
         ARGOCD_SERVER = 'argocd-server-url'
         ARGOCD_APP = 'your-argocd-app'
+        DOCKER_IMAGE_TAG = ''
     }
 
     stages {
-        stage('Clone') {
+        stage('Set Variables') {
             steps {
-                checkout scm
+                script {
+                    env.DOCKER_IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
             }
         }
 
@@ -19,7 +22,7 @@ pipeline {
             }
             steps {
                 script {
-                    docker.build("backend:${env.BUILD_ID}", "./backend")
+                    docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
                 }
             }
         }
@@ -30,18 +33,7 @@ pipeline {
             }
             steps {
                 script {
-                    docker.build("frontend:${env.BUILD_ID}", "./frontend")
-                }
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                script {
-                    // Utiliser les credentials Jenkins
-                    withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                    }
+                    docker.build("frontend:${env.DOCKER_IMAGE_TAG}", "./frontend")
                 }
             }
         }
@@ -49,13 +41,11 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Push Backend
-                    sh "docker tag backend:${env.BUILD_ID} ${DOCKER_USERNAME}/crypto_webapp:${env.BUILD_ID}"
-                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:${env.BUILD_ID}"
+                    sh "docker tag backend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
+                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
 
-                    // Push Frontend
-                    sh "docker tag frontend:${env.BUILD_ID} ${DOCKER_USERNAME}/crypto_webapp:${env.BUILD_ID}"
-                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:${env.BUILD_ID}"
+                    sh "docker tag frontend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
+                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
                 }
             }    
         }
@@ -63,7 +53,6 @@ pipeline {
         stage('Trigger ArgoCD Sync') {
             steps {
                 script {
-                    // Exécuter une commande ArgoCD pour synchroniser le déploiement
                     sh "argocd app sync ${ARGOCD_APP} --server ${ARGOCD_SERVER}"
                 }
             }
