@@ -1,79 +1,58 @@
 pipeline {
     agent any
-
     environment {
-        ARGOCD_SERVER = 'https://15.237.196.94:8080'
-        ARGOCD_APP = 'webapp'
         DOCKER_IMAGE_TAG = ''
-        GIT_CREDENTIALS_ID = 'Github_IACrypto'
-        K8S_MANIFESTS_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
+        DOCKER_USERNAME = 'ziyed1'
     }
-
+    
     stages {
+        stage('Checkout') {
+            steps {
+                // Récupérer le code du repository
+                checkout scm
+            }
+        }
+
         stage('Set Variables') {
             steps {
                 script {
+                    // Générer un tag basé sur le commit
                     env.DOCKER_IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 }
             }
         }
 
-        stage('Build & Push Images') {
+        stage('Build Frontend Docker Image') {
             steps {
                 script {
-                    def branch = env.BRANCH_NAME
-
-                    if (branch == 'backend' || branch == 'frontend') {
-                        echo "Building and pushing Docker image for ${branch}..."
-
-                        docker.build("${branch}:${env.DOCKER_IMAGE_TAG}", "./${branch}")
-
-                        withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                            sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                            sh "docker tag ${branch}:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}"
-                            sh "docker push ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}"
-                        }
-                    } else {
-                        echo "Branch ${branch} is not 'backend' or 'frontend'. Skipping..."
-                    }
+                    // Construire l'image pour le frontend
+                    echo "Building Docker image for frontend..."
+                    docker.build("frontend:${env.DOCKER_IMAGE_TAG}", "./frontend")
                 }
             }
         }
 
-        stage('Update K8s Manifests') {
-            when { expression { return env.BRANCH_NAME == 'backend' || env.BRANCH_NAME == 'frontend' } }
+        stage('Build Backend Docker Image') {
             steps {
                 script {
-                    sh "rm -rf my-app-k8s-manifests || true"
-                    sh "git clone ${K8S_MANIFESTS_REPO} my-app-k8s-manifests"
-                    
-                    def branch = env.BRANCH_NAME
-                    def yamlFile = branch == 'backend' ? 'backend-deployment.yaml' : 'frontend-deployment.yaml'
-
-                    sh """
-                    sed -i 's|image:.*crypto_webapp:${branch}-.*|image: ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}|' my-app-k8s-manifests/${yamlFile}
-                    """
-
-                    dir('my-app-k8s-manifests') {
-                        withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                            sh """
-                            git config --global user.email "jenkins@yourdomain.com"
-                            git config --global user.name "Jenkins"
-                            git add ${yamlFile}
-                            git commit -m "Update ${branch} image to ${env.DOCKER_IMAGE_TAG}"
-                            git push origin main
-                            """
-                        }
-                    }
+                    // Construire l'image pour le backend
+                    echo "Building Docker image for backend..."
+                    docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
                 }
             }
         }
 
-        stage('Trigger ArgoCD Sync') {
-            when { expression { return env.BRANCH_NAME == 'backend' || env.BRANCH_NAME == 'frontend' } }
+        stage('Push Docker Images') {
             steps {
                 script {
-                    sh "argocd app sync ${ARGOCD_APP} --server ${ARGOCD_SERVER}"
+                    // Se connecter à Docker Hub et pousser les images
+                    withCredentials([usernamePassword(credentialsId: 'DockerHubCred', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                        
+                        // Pousser les images frontend et backend
+                        sh "docker push ${DOCKER_USERNAME}/frontend:${env.DOCKER_IMAGE_TAG}"
+                        sh "docker push ${DOCKER_USERNAME}/backend:${env.DOCKER_IMAGE_TAG}"
+                    }
                 }
             }
         }
