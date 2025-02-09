@@ -10,9 +10,20 @@ pipeline {
     }
 
     stages {
+        stage('Checkout SCM') {
+            steps {
+                script {
+                    echo "Checkout branch: ${env.BRANCH_NAME}"
+                    // Checkout de la branche en cours (frontend ou backend)
+                    sh "git checkout ${env.BRANCH_NAME}"
+                }
+            }
+        }
+
         stage('Set Variables') {
             steps {
                 script {
+                    // Set Docker image tag using the current commit hash
                     env.DOCKER_IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 }
             }
@@ -26,7 +37,8 @@ pipeline {
                     if (branch == 'backend' || branch == 'frontend') {
                         echo "Building and pushing Docker image for ${branch}..."
 
-                        docker.build("${branch}:${env.DOCKER_IMAGE_TAG}", "./${branch}")
+                        // Change the context to the root directory or appropriate subdirectory if needed
+                        docker.build("${branch}:${env.DOCKER_IMAGE_TAG}", ".") // Utiliser '.' pour le contexte racine
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
