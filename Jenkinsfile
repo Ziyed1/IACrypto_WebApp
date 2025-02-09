@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        ARGOCD_SERVER = 'argocd-server-url'
-        ARGOCD_APP = 'your-argocd-app'
+        ARGOCD_SERVER = 'https://15.237.196.94:8080'
+        ARGOCD_APP = 'webapp'
         DOCKER_IMAGE_TAG = ''
         GIT_CREDENTIALS_ID = 'Github_IACrypto'
         K8S_MANIFESTS_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
@@ -18,65 +18,49 @@ pipeline {
             }
         }
 
-        stage('Build Backend Image') {
+        stage('Build & Push Images') {
             steps {
                 script {
-                    docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
-                }
-            }
-        }
+                    def branch = env.BRANCH_NAME
 
-        stage('Build Frontend Image') {
-            steps {
-                script {
-                    docker.build("frontend:${env.DOCKER_IMAGE_TAG}", "./frontend")
-                }
-            }
-        }
+                    if (branch == 'backend' || branch == 'frontend') {
+                        echo "Building and pushing Docker image for ${branch}..."
 
-        stage('Login to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                        docker.build("${branch}:${env.DOCKER_IMAGE_TAG}", "./${branch}")
+
+                        withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                            sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                            sh "docker tag ${branch}:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}"
+                            sh "docker push ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}"
+                        }
+                    } else {
+                        echo "Branch ${branch} is not 'backend' or 'frontend'. Skipping..."
                     }
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    sh "docker tag backend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
-                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
-
-                    sh "docker tag frontend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
-                    sh "docker push ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
-                }
-            }    
-        }
-
         stage('Update K8s Manifests') {
+            when { expression { return env.BRANCH_NAME == 'backend' || env.BRANCH_NAME == 'frontend' } }
             steps {
                 script {
-                    // Clone du repo des manifests
-                    sh "rm -rf my-app-k8s-manifests"
-                    sh "git clone ${K8S_MANIFESTS_REPO}"
+                    sh "rm -rf my-app-k8s-manifests || true"
+                    sh "git clone ${K8S_MANIFESTS_REPO} my-app-k8s-manifests"
+                    
+                    def branch = env.BRANCH_NAME
+                    def yamlFile = branch == 'backend' ? 'backend-deployment.yaml' : 'frontend-deployment.yaml'
 
-                    // Mise à jour des images dans les fichiers YAML
                     sh """
-                    sed -i 's|image:.*crypto_webapp:backend-.*|image: ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}|' my-app-k8s-manifests/backend-deployment.yaml
-                    sed -i 's|image:.*crypto_webapp:frontend-.*|image: ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}|' my-app-k8s-manifests/frontend-deployment.yaml
+                    sed -i 's|image:.*crypto_webapp:${branch}-.*|image: ${DOCKER_USERNAME}/crypto_webapp:${branch}-${env.DOCKER_IMAGE_TAG}|' my-app-k8s-manifests/${yamlFile}
                     """
 
-                    // Commit et push des modifications
                     dir('my-app-k8s-manifests') {
                         withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                             sh """
                             git config --global user.email "jenkins@yourdomain.com"
                             git config --global user.name "Jenkins"
-                            git add .
-                            git commit -m "Update images to backend-${env.DOCKER_IMAGE_TAG} and frontend-${env.DOCKER_IMAGE_TAG}"
+                            git add ${yamlFile}
+                            git commit -m "Update ${branch} image to ${env.DOCKER_IMAGE_TAG}"
                             git push origin main
                             """
                         }
@@ -86,6 +70,7 @@ pipeline {
         }
 
         stage('Trigger ArgoCD Sync') {
+            when { expression { return env.BRANCH_NAME == 'backend' || env.BRANCH_NAME == 'frontend' } }
             steps {
                 script {
                     sh "argocd app sync ${ARGOCD_APP} --server ${ARGOCD_SERVER}"
