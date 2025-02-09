@@ -33,8 +33,8 @@ pipeline {
                         // Assure-toi que le code de la branche 'frontend' est bien checkouté
                         sh "git checkout frontend"
 
-                        // Construire l'image Docker pour le frontend
-                        docker.build("frontend:${env.DOCKER_IMAGE_TAG}")
+                        // Construire l'image Docker pour le frontend avec le chemin du Dockerfile à la racine de la branche frontend
+                        docker.build("frontend:${env.DOCKER_IMAGE_TAG}", ".")
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
@@ -59,8 +59,8 @@ pipeline {
                         // Assure-toi que le code de la branche 'backend' est bien checkouté
                         sh "git checkout backend"
 
-                        // Construire l'image Docker pour le backend
-                        docker.build("backend:${env.DOCKER_IMAGE_TAG}")
+                        // Construire l'image Docker pour le backend avec le chemin du Dockerfile à la racine de la branche backend
+                        docker.build("backend:${env.DOCKER_IMAGE_TAG}", ".")
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
