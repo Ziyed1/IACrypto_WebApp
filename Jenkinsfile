@@ -22,36 +22,53 @@ pipeline {
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Build & Push Frontend Docker Image') {
             steps {
                 script {
-                    // Construire l'image pour le frontend
-                    echo "Building Docker image for frontend..."
-                    docker.build("frontend:${env.DOCKER_IMAGE_TAG}", "./frontend")
+                    def branch = env.BRANCH_NAME
+
+                    if (branch == 'frontend') {
+                        echo "Building Docker image for frontend..."
+
+                        // Assure-toi que le code de la branche 'frontend' est bien checkouté
+                        sh "git checkout frontend"
+
+                        // Construire l'image Docker pour le frontend
+                        docker.build("frontend:${env.DOCKER_IMAGE_TAG}")
+
+                        withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                            sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                            sh "docker tag frontend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
+                            sh "docker push ${DOCKER_USERNAME}/crypto_webapp:frontend-${env.DOCKER_IMAGE_TAG}"
+                        }
+                    } else {
+                        echo "Branch ${branch} is not 'frontend'. Skipping frontend build."
+                    }
                 }
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build & Push Backend Docker Image') {
             steps {
                 script {
-                    // Construire l'image pour le backend
-                    echo "Building Docker image for backend..."
-                    docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
-                }
-            }
-        }
+                    def branch = env.BRANCH_NAME
 
-        stage('Push Docker Images') {
-            steps {
-                script {
-                    // Se connecter à Docker Hub et pousser les images
-                    withCredentials([usernamePassword(credentialsId: 'DockerHubCred', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        
-                        // Pousser les images frontend et backend
-                        sh "docker push ${DOCKER_USERNAME}/frontend:${env.DOCKER_IMAGE_TAG}"
-                        sh "docker push ${DOCKER_USERNAME}/backend:${env.DOCKER_IMAGE_TAG}"
+                    if (branch == 'backend') {
+                        echo "Building Docker image for backend..."
+
+                        // Assure-toi que le code de la branche 'backend' est bien checkouté
+                        sh "git checkout backend"
+
+                        // Construire l'image Docker pour le backend
+                        docker.build("backend:${env.DOCKER_IMAGE_TAG}")
+
+                        withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                            sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                            sh "docker tag backend:${env.DOCKER_IMAGE_TAG} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
+                            sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.DOCKER_IMAGE_TAG}"
+                        }
+                    } else {
+                        echo "Branch ${branch} is not 'backend'. Skipping backend build."
                     }
                 }
             }
