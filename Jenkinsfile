@@ -29,12 +29,11 @@ pipeline {
                     if (branch == 'frontend') {
                         echo "Building Docker image for frontend..."
 
-                        // Assure-toi que le code de la branche 'frontend' est bien checkouté
-                        sh "git checkout frontend"
+                        // Assure-toi que la branche 'frontend' est à jour
+                        sh 'git checkout frontend'
+                        sh 'git pull origin frontend'
 
-                        sh 'git pull origin frontend'  // Assurer que la branche est à jour
-
-                        // Construire l'image Docker pour le frontend avec le chemin du Dockerfile à la racine de la branche frontend
+                        // Construire l'image Docker pour le frontend
                         docker.build("frontend:${env.DOCKER_IMAGE_TAG}")
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
@@ -57,13 +56,11 @@ pipeline {
                     if (branch == 'backend') {
                         echo "Building Docker image for backend..."
 
-                        // Assure-toi que le code de la branche 'backend' est bien checkouté
-                        sh "git checkout backend"
+                        // Assure-toi que la branche 'backend' est à jour
+                        sh 'git checkout backend'
+                        sh 'git pull origin backend'
 
-                        sh 'git pull origin backend'  // Assurer que la branche est à jour
-
-
-                        // Construire l'image Docker pour le backend avec le chemin du Dockerfile à la racine de la branche backend
+                        // Construire l'image Docker pour le backend avec le chemin du Dockerfile spécifique au backend
                         docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
