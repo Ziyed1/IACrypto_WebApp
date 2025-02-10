@@ -4,7 +4,7 @@ FROM node:16
 WORKDIR /app
 
 # Copie des fichiers package.json et package-lock.json
-COPY backend/package*.json ./
+COPY ./package*.json ./
 
 # Installation des dépendances
 RUN npm install
