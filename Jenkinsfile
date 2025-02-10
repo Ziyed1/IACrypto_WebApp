@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE_TAG = ''
-        DOCKER_USERNAME = 'ziyed1'
     }
     
     stages {
@@ -36,7 +35,7 @@ pipeline {
                         sh 'git pull origin frontend'  // Assurer que la branche est à jour
 
                         // Construire l'image Docker pour le frontend avec le chemin du Dockerfile à la racine de la branche frontend
-                        docker.build("frontend:${env.DOCKER_IMAGE_TAG}", "./frontend")
+                        docker.build("frontend:${env.DOCKER_IMAGE_TAG}")
 
                         withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
