@@ -7,10 +7,10 @@ WORKDIR /app
 COPY ./package*.json ./
 
 # Installation des dépendances
-RUN npm install
+RUN npm i web-vitals --save-dev
 
 # Copie du reste du code
-COPY backend/ .
+COPY ./ .
 
 # Exposition du port sur lequel l'API va tourner
 EXPOSE 5000
