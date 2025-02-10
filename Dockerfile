@@ -7,7 +7,7 @@ WORKDIR /app
 COPY ./package*.json ./
 
 # Installation des dépendances
-RUN npm i web-vitals --save-dev
+RUN npm i web-vitals --save-dev --legacy-peer-deps
 
 # Copie du reste du code
 COPY ./ .
