@@ -26,7 +26,7 @@ pipeline {
                     echo "Building Docker image for backend..."
 
                     // Construire l'image Docker pour le backend
-                    docker.build("backend:${env.DOCKER_IMAGE_TAG}", "./backend")
+                    docker.build("backend:${env.DOCKER_IMAGE_TAG}")
 
                     // Connexion au registre Docker Hub et push de l'image
                     withCredentials([usernamePassword(credentialsId: 'DHcredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
