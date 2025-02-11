@@ -14,7 +14,7 @@ pipeline {
                     echo "Building Docker image for frontend..."
 
                     // Construire l'image Docker pour le frontend avec le tag basé sur le numéro de build
-                    def imageTag = "frontend:v.-${env.BUILD_NUMBER}"
+                    def imageTag = "frontend:v.${env.BUILD_NUMBER}"
                     docker.build(imageTag)
 
                     // Connexion au registre Docker Hub et push de l'image
