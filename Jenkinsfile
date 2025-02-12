@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        MANIFEST_REPO = 'https://github.com/Ziyed1/K8s-Manifests.git'
+        MANIFEST_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
         BRANCH = 'main'
     }
 
@@ -43,24 +43,20 @@ pipeline {
         stage('Update K8s Manifests') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'DHcrendential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'GitHubSSHKey', keyFileVariable: 'SSH_KEY')]) {
                         sh """
-                        git clone ${MANIFEST_REPO}
+                        export GIT_SSH_COMMAND="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
+                        git clone git@github.com:Ziyed1/K8s-Manifests.git
                         cd K8s-Manifests
-
                         sed -i 's|image: docker.io/DOCKER_USERNAME/crypto_webapp:frontend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:frontend-${env.IMAGE_TAG}|' frontend-deployment.yaml
-
-                        git config --global user.email "ci-bot@example.com"
-                        git config --global user.name "Ziyed1"
                         git add .
                         git commit -m "Update frontend image to frontend-${env.IMAGE_TAG}"
-                        git push origin ${BRANCH}
+                        git push origin main
 
-                        # Nettoyage
                         cd ..
                         rm -rf K8s-Manifests
                         """
-                    }
+}
                 }
             }
         }
