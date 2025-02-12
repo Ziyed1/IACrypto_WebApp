@@ -1,10 +1,6 @@
 pipeline {  
     agent any
 
-    environment {
-        IMAGE_NAME = "crypto_webapp"
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -25,15 +21,15 @@ pipeline {
                 script {
                     echo "Building Docker image for backend..."
 
-                    def fullImageTag = "${DOCKER_USERNAME}/${IMAGE_NAME}:backend-${env.IMAGE_TAG}"
+                    // Création du tag d'image
+                    def imageTag = "backend:${env.IMAGE_TAG}"
+                    docker.build(imageTag)
 
-                    // Build de l'image
-                    sh "docker build -t ${fullImageTag} ."
-
-                    // Connexion au Docker Hub et push
+                    // Connexion à Docker Hub et push de l'image
                     withCredentials([usernamePassword(credentialsId: 'DHcrendential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${fullImageTag}"
+                        sh "docker tag ${imageTag} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}"
+                        sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}"
                     }
                 }
             }
