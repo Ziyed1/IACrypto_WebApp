@@ -1,6 +1,9 @@
 pipeline {  
-    //test webhook
     agent any
+
+    environment {
+        IMAGE_NAME = "crypto_webapp"
+    }
 
     stages {
         stage('Checkout') {
@@ -9,20 +12,28 @@ pipeline {
             }
         }
 
+        stage('Generate Git Tag') {
+            steps {
+                script {
+                    env.IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
+            }
+        }
+
         stage('Build & Push Backend Docker Image') {
             steps {
                 script {
                     echo "Building Docker image for backend..."
 
-                    // Construire l'image Docker pour le frontend avec le tag basé sur le numéro de build
-                    def imageTag = "backend:v.${env.BUILD_NUMBER}"
-                    docker.build(imageTag)
+                    def fullImageTag = "${env.DOCKER_USERNAME}/${IMAGE_NAME}:backend-${env.IMAGE_TAG}"
 
-                    // Connexion au registre Docker Hub et push de l'image
+                    // Build de l'image
+                    sh "docker build -t ${fullImageTag} ."
+
+                    // Connexion au Docker Hub et push
                     withCredentials([usernamePassword(credentialsId: 'DHcrendential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker tag ${imageTag} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.BUILD_NUMBER}"
-                        sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.BUILD_NUMBER}"
+                        sh "docker push ${fullImageTag}"
                     }
                 }
             }
