@@ -4,6 +4,7 @@ pipeline {
     environment {
         MANIFEST_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
         BRANCH = 'main'
+        DOCKER_USERNAME = 'ziyed1'
     }
 
     stages {
@@ -24,14 +25,14 @@ pipeline {
         stage('Build & Push Backend Docker Image') {
             steps {
                 script {
-                    echo "Building Docker image for backend..."
-
-                    // Création du tag d'image
-                    def imageTag = "backend:${env.IMAGE_TAG}"
-                    docker.build(imageTag)
-
-                    // Connexion à Docker Hub et push de l'image
                     withCredentials([usernamePassword(credentialsId: 'DHcrendential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        echo "Building Docker image for backend..."
+
+                        // Création du tag d'image
+                        def imageTag = "backend:${env.IMAGE_TAG}"
+                        docker.build(imageTag)
+
+                        // Connexion à Docker Hub et push de l'image
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
                         sh "docker tag ${imageTag} ${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}"
                         sh "docker push ${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}"
@@ -40,24 +41,31 @@ pipeline {
             }
         }
 
-        stage("Update K8s Manifests") {
+        stage('Update K8s Manifests') {
             steps {
                 script {
-                    sh """
-                    git clone ${MANIFEST_REPO}
-                    cd K8s-Manifests
+                    withCredentials([sshUserPrivateKey(credentialsId: 'GitHubSSHKey', keyFileVariable: 'SSH_KEY')]) {
+                        sh """
+                        eval \$(ssh-agent -s)
+                        ssh-add $SSH_KEY
+                        ssh -o StrictHostKeyChecking=no git@github.com || true
 
-                    sed -i '-s|image: docker.io/DOCKER_USERNAME/crypto_webapp:backend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}|' backend-deployment.yaml
+                        git clone ${MANIFEST_REPO}
+                        cd K8s-Manifests
 
-                    git config --global user.email "ci-bot@example.com"
-                    git config --global user.name "Jenkins CI"
-                    git add .
-                    git commit -m "Update backend image to backend-${env.IMAGE_TAG}"
-                    git push origin ${BRANCH}
+                        git config --global user.email "ci-bot@example.com"
+                        git config --global user.name "Jenkins CI"
 
-                    cd ..
-                    rm -rf K8s-Manifests
-                    """
+                        sed -i 's|image: docker.io/DOCKER_USERNAME/crypto_webapp:backend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}|' backend-deployment.yaml
+                        
+                        git add backend-deployment.yaml
+                        git commit -m "Update backend image to backend-${env.IMAGE_TAG}"
+                        git push origin ${BRANCH}
+
+                        cd ..
+                        rm -rf K8s-Manifests
+                        """
+                    }
                 }
             }
         }
