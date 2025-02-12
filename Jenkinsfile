@@ -25,7 +25,7 @@ pipeline {
                 script {
                     echo "Building Docker image for backend..."
 
-                    def fullImageTag = "${env.DOCKER_USERNAME}/${IMAGE_NAME}:backend-${env.IMAGE_TAG}"
+                    def fullImageTag = "${DOCKER_USERNAME}/${IMAGE_NAME}:backend-${env.IMAGE_TAG}"
 
                     // Build de l'image
                     sh "docker build -t ${fullImageTag} ."
