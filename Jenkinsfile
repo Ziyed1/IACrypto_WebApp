@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        MANIFEST_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
+        MANIFEST_REPO = 'https://github.com/Ziyed1/K8s-Manifests.git'
         BRANCH = 'main'
     }
 
