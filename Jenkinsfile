@@ -4,6 +4,7 @@ pipeline {
     environment {
         MANIFEST_REPO = 'git@github.com:Ziyed1/K8s-Manifests.git'
         BRANCH = 'main'
+        DOCKER_USERNAME = 'ziyed1'
     }
 
     stages {
