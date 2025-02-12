@@ -51,7 +51,7 @@ pipeline {
                         sed -i 's|image: docker.io/DOCKER_USERNAME/crypto_webapp:frontend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:frontend-${env.IMAGE_TAG}|' frontend-deployment.yaml
 
                         git config --global user.email "ci-bot@example.com"
-                        git config --global user.name "Jenkins CI"
+                        git config --global user.name "Ziyed1"
                         git add .
                         git commit -m "Update frontend image to frontend-${env.IMAGE_TAG}"
                         git push origin ${BRANCH}
