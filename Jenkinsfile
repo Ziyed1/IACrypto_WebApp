@@ -56,7 +56,7 @@ pipeline {
                         git config --global user.email "ci-bot@example.com"
                         git config --global user.name "Jenkins CI"
 
-                        sed -i 's|image: docker.io/DOCKER_USERNAME/crypto_webapp:backend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}|' backend-deployment.yaml
+                        sed -i 's|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-[^ ]*|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}|' backend-deployment.yaml
                         
                         git add backend-deployment.yaml
                         git commit -m "Update backend image to backend-${env.IMAGE_TAG}"
