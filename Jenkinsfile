@@ -50,6 +50,7 @@ pipeline {
                         ssh-add $SSH_KEY
                         ssh -o StrictHostKeyChecking=no git@github.com || true
 
+                        rm -rf K8s-Manifests
                         git clone ${MANIFEST_REPO}
                         cd K8s-Manifests
 
@@ -65,10 +66,6 @@ pipeline {
                         else
                             echo "Aucune modification à commiter"
                         fi
-
-                        cd ..
-                        echo "Path actuel : \$PWD" 
-                        rm -rf K8s-Manifests
                         """
                     }
                 }
