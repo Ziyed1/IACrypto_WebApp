@@ -63,6 +63,7 @@ pipeline {
                         git push origin ${BRANCH}
 
                         cd ..
+                        echo "Path actuel : \$PWD" 
                         rm -rf K8s-Manifests
                         """
                     }
