@@ -59,8 +59,12 @@ pipeline {
                         sed -i 's|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-[^ ]*|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:backend-${env.IMAGE_TAG}|' backend-deployment.yaml
                         
                         git add backend-deployment.yaml
-                        git commit -m "Update backend image to backend-${env.IMAGE_TAG}"
-                        git push origin ${BRANCH}
+                        if [ -n "\$(git diff --cached)" ]; then
+                            git commit -m "Update backend image to backend-${env.IMAGE_TAG}"
+                            git push origin ${BRANCH}
+                        else
+                            echo "Aucune modification à commiter"
+                        fi
 
                         cd ..
                         echo "Path actuel : \$PWD" 
