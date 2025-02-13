@@ -1,14 +1,11 @@
-// app.js
 const express = require('express');
 const app = express();
 const port = 3000;
 
-// Route simple pour tester
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
+app.get('/api/message', (req, res) => {
+  res.json({ message: 'Hello from the backend!' });
 });
 
-// Lancer le serveur
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+  console.log(`Server is running at http://localhost:${port}`);
 });
