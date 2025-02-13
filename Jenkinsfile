@@ -50,20 +50,22 @@ pipeline {
                         ssh-add $SSH_KEY
                         ssh -o StrictHostKeyChecking=no git@github.com || true
 
+                        rm -rf K8s-Manifests
                         git clone ${MANIFEST_REPO}
                         cd K8s-Manifests
 
                         git config --global user.email "ci-bot@example.com"
                         git config --global user.name "Jenkins CI"
 
-                        sed -i 's|image: docker.io/DOCKER_USERNAME/crypto_webapp:frontend-.*|image: docker.io/${DOCKER_USERNAME}/crypto_webapp:frontend-${env.IMAGE_TAG}|' frontend-deployment.yaml
+                        sed -i 's|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:frontend-[^ ]*|  image: docker.io/${DOCKER_USERNAME}/crypto_webapp:frontend-${env.IMAGE_TAG}|' frontend-deployment.yaml
                         
                         git add frontend-deployment.yaml
-                        git commit -m "Update frontend image to frontend-${env.IMAGE_TAG}"
-                        git push origin ${BRANCH}
-
-                        cd ..
-                        rm -rf K8s-Manifests
+                        if [ -n "\$(git diff --cached)" ]; then
+                            git commit -m "Update frontend image to frontend-${env.IMAGE_TAG}"
+                            git push origin ${BRANCH}
+                        else
+                            echo "Aucune modification à commiter"
+                        fi
                         """
                     }
                 }
