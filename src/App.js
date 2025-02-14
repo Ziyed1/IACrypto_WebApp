@@ -2,27 +2,40 @@ import React, { useEffect, useState } from 'react';
 
 function App() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null); // Pour gérer les erreurs
 
-  // Appel à l'API backend (remplace l'URL par l'adresse réelle de ton backend)
+  // Appel à l'API backend
   useEffect(() => {
-    fetch('http://backend-service.default.svc.cluster.local:3000/api/message')  // L'URL de ton API
-      .then((response) => response.json())
-      .then((data) => setData(data))
-      .catch((error) => console.error('Error fetching data:', error));
-  }, []);
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://backend-service.default.svc.cluster.local:3000/api/message');
+
+        // Vérification de la réponse
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('API Response:', result); // Affiche la réponse pour debugging
+        setData(result); // Mise à jour de l'état avec la réponse
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Une erreur s\'est produite lors de la récupération des données.');
+      }
+    };
+
+    fetchData();
+  }, []); // Le tableau vide [] signifie que l'effet se déclenche uniquement au montage du composant
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>IA Crypto - Découvre les tendances d'évolutions de Solana !</h1>
-        <p>
-          {data ? data.message : 'Loading... tkt ca arrive'}
-        </p>
+        {error && <p style={{ color: 'red' }}>{error}</p>} {/* Affiche l'erreur si présente */}
+        <p>{data ? data.message : 'Chargement en cours...'}</p> {/* Affiche le message ou "Chargement..." */}
       </header>
     </div>
   );
 }
 
-
 export default App;
-
