@@ -14,7 +14,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Welcome to My Test App! Ta capter ou pas ?</h1>
+        <h1>IA Crypto - Découvre les tendances d'évolutions de Solana !</h1>
         <p>
           {data ? data.message : 'Loading...'}
         </p>
