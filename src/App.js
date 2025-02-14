@@ -16,7 +16,7 @@ function App() {
       <header className="App-header">
         <h1>IA Crypto - Découvre les tendances d'évolutions de Solana !</h1>
         <p>
-          {data ? data.message : 'Loading...'}
+          {data ? data.message : 'Loading... tkt ca arrive'}
         </p>
       </header>
     </div>
