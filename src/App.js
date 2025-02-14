@@ -8,7 +8,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://backend-service:3000/api/message');
+        const response = await fetch('http://10.110.23.98:31000/api/message');
 
         // Vérification de la réponse
         if (!response.ok) {
