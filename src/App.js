@@ -8,7 +8,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://backend-service.default.svc.cluster.local:3000/api/message');
+        const response = await fetch('http://backend-service.default.svc.cluster.local:31000/api/message');
 
         // Vérification de la réponse
         if (!response.ok) {
