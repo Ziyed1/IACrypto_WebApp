@@ -5,7 +5,7 @@ function App() {
 
   // Appel à l'API backend (remplace l'URL par l'adresse réelle de ton backend)
   useEffect(() => {
-    fetch('http://backend-service:3000/api/message')  // L'URL de ton API
+    fetch('http://backend-service.default.svc.cluster.local:3000/api/message')  // L'URL de ton API
       .then((response) => response.json())
       .then((data) => setData(data))
       .catch((error) => console.error('Error fetching data:', error));
